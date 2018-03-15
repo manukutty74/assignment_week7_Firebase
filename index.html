@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
+    <title>Train Schedule</title>
+    <script src="https://cdn.jsdelivr.net/momentjs/2.12.0/moment.min.js"></script>
+  
+  <!-- Initialize Firebase-->
+  
+   <script src="https://www.gstatic.com/firebasejs/4.11.0/firebase.js"></script>
+   <script>
+     
+    // Initialize Firebase
+     var config = {
+    apiKey: "AIzaSyCwcymCgYjIhbCy4aqiGnPiojx8tgZXEEU",
+    authDomain: "mytraindb.firebaseapp.com",
+    databaseURL: "https://mytraindb.firebaseio.com",
+    projectId: "mytraindb",
+    storageBucket: "mytraindb.appspot.com",
+    messagingSenderId: "16820421168"
+  };
+
+  firebase.initializeApp(config);
+  var database = firebase.database();
+  
+  </script>
+  <style type="text/css">
+    
+    .jumbotron {
+    
+    background-image: url(subway.jpg);
+    background-position: 0% 25%;
+    background-size: cover;
+    background-repeat: no-repeat;
+    text-shadow: black 0.3em 0.3em 0.3em;
+   }
+  </style>
+
+</head>
+
+<body>
+
+  <div class="container">
+    
+    <div class="container" style="text-align: center">
+         <h3>Any Time is Train Time!</h3>
+         <h5>Today is <span id="current-status"></span></h5>
+     </div>
+     <br>
+     <div class="jumbotron text-center">
+         
+      </div>
+     
+    
+        <div class="row">
+            <div class="col-md-8" style="text-align: center">
+                <div class="panel panel-info">
+                   <div class="panel-heading">Train Data</div>
+
+                      <table class="table">
+                        <thead>
+                            <tr>
+                                <th> Train No</th>
+                                <th>Train Name</th>
+                                <th>Destination</th>
+                                <th>Frequency in Min</th>
+                                <th>First Arrival</th>
+                                <th>Arriving in</th>
+                                <th>Next Arrival</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tbodytrain">
+
+                        </tbody>
+                     </table>
+                </div>
+            </div>
+
+            <div class="col-md-1"></div>
+
+            <div class="col-md-3" style="text-align: center">
+                <div class="panel panel-info">
+                    <div class="panel-heading">Add New / Change Train Details</div>
+               <form role="form" id="data-input">
+                  <div class="form-group">
+                    <label for="name-input">Name:</label>
+                    <input class="form-control" id="tName" type="text">
+                  </div>
+                  <div class="form-group">
+                    <label for="email-input">Destination:</label>
+                    <input class="form-control" id="tDestination" type="text">
+                  </div>
+                  <div class="form-group">
+                    <label for="age-input">Frequency:</label>
+                    <input class="form-control" id="tFrequency" type="text">
+                  </div>
+                  <div class="form-group">
+                    <label for="comment-input">First Arrival</label>
+                     <input class="form-control" id="tFArrival" type="text">
+                  </div>
+                   <button class="btn btn-default glyphicon glyphicon-save" id="add-data" type="submit">Save</button>
+                   <button class="btn btn-default glyphicon glyphicon-erase" id="clear-data" type="submit">Reset</button>
+             </form>
+                </div>
+
+
+            </div>
+        </div>
+    </div>
+
+ <!--<script src="moment.js"></script> --> 
+
+ <script>
+
+  var update = function () {
+  date = moment(new Date())
+  datetime.html(date.format('dddd, MMMM Do YYYY, h:mm:ss a'));
+};
+
+$(document).ready(function(){
+  datetime = $('#current-status')
+  update();
+  setInterval(update, 1000);
+});
+ 
+ 
+
+$("#add-data").on("click",function(){
+
+  event.preventDefault();
+
+ var tName = $("#tName").val();
+ var tDestination = $("#tDestination").val();
+ var tFrequency = $("#tFrequency").val();
+ var tFArrival = $("#tFArrival").val();
+
+
+database.ref().push({
+
+    trainName : tName,
+    trainDest : tDestination,
+    trainFreq : tFrequency,
+    trainFArr : tFArrival
+   
+ });
+
+
+});
+
+
+$("#clear-data").on("click",function(){
+
+  $("data-input").reset();
+
+});
+
+
+
+    // database.ref().on("child_added", function(snapshot) {
+
+ 
+    // });
+
+    database.ref().on("value", function(snapshot) {
+
+     
+       var i = 0;
+      $("#tbodytrain").empty();
+
+       snapshot.forEach(function(childSnapshot) {
+         i++ ;
+       var key = childSnapshot.key;
+      // childData will be the actual contents of the child
+       var childData = childSnapshot.val();
+       //alert(childData.name);
+      console.log(childData.trainName);
+
+   var tFArrival = childData.trainFArr;
+
+// First Time (pushed back 1 year to make sure it comes before current time)
+  var firstTimeConverted = moment(tFArrival, "hh:mm").subtract(1, "years");
+  console.log("FTC: "+firstTimeConverted);
+
+  // Difference between the times
+  var diffTime = moment().diff(moment(firstTimeConverted), "minutes");
+  console.log("Difference in time: " + diffTime);
+
+  //Time apart (remainder)
+  var tRemainder = diffTime % childData.trainFreq;
+  console.log(tRemainder);
+
+  // Minute Until Train
+  var minutesAway = childData.trainFreq - tRemainder;
+  console.log("Minutes away: " + minutesAway);
+
+  //Next Train
+  var nextTrain = moment().add(minutesAway, "minutes");
+  console.log("Arrival time: " + moment(nextTrain).format("hh:mm a"));
+
+  // Arrival time
+  var nextArrival = moment(nextTrain).format("hh:mm a");
+
+  
+      var t = '<tr><td>'+i+'</td><td>'+childData.trainName+'</td><td>'+childData.trainDest+'</td><td>'+childData.trainFreq+'</td><td>'+childData.trainFArr+'</td><td>'+minutesAway+'</td><td>'+nextArrival+'</td></tr>';
+     $("#tbodytrain").append(t);
+
+    });
+   
+    // Handle the errors
+
+    // }, function(errorObject) {
+
+    //   console.log("Errors handled: " + errorObject.code);
+
+    });
+
+  
+
+
+
+
+ </script>
+
+
+</body>
+
+</html>
